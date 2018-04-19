@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.plan.PlanManageDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="PlanQuery">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from (
+ 				select pl.*, cu.cus_name cus_name, co.co_name co_name, st.standard_name standard_name, 
+ 					case pl.plan_type 
+ 								when 1 then '白布产品'
+ 								when 2 then '染色产品'
+ 								when 3 then '无底色印花产品'
+ 								when 4 then '有底色印花产品'
+ 						end plan_type_name,
+ 					case pl.plan_status 
+ 								when 0 then '未下达'
+ 								when 1 then '已下达'
+ 						end plan_status_name 
+ 				from bus_plan pl inner join info_customer cu on pl.cus_id      = cu.cus_id 
+ 								 inner join info_color co    on pl.co_id       = co.co_id 
+ 								 inner join info_standard st on pl.standard_id = st.standard_id 
+ 				<where>
+ 					<if test="plan_id != null">
+ 						and pl.plan_id like ${plan_id}
+ 					</if>
+ 					<if test="plan_month != null and plan_month != ''">
+ 						and pl.plan_month = #{plan_month}
+ 					</if>
+ 					<if test="plan_type != null">
+ 						and pl.plan_type = #{plan_type}
+ 					</if>
+ 					<if test="plan_status == 0 or plan_status == 1">
+ 						and pl.plan_status = #{plan_status}
+ 					</if>
+					and pl.plan_person = #{plan_person}
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start} order by plan_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(plan_id) 
+    	from bus_plan pl
+    	<where>
+    		<if test="plan_id != null">
+				and pl.plan_id like ${plan_id}
+			</if>
+			<if test="plan_month != null and plan_month != ''">
+				and pl.plan_month = #{plan_month}
+			</if>
+			<if test="plan_type != null">
+				and pl.plan_type = #{plan_type}
+			</if>
+			<if test="plan_status == 0 or plan_status == 1">
+				and pl.plan_status = #{plan_status}
+			</if>
+			and pl.plan_person = #{plan_person}
+    	</where>
+    </select>
+    
+        
+    <!-- 查询所有客户 -->
+    <select id="toGetAllCustomer" resultType="Customer">
+		select * from info_customer
+  	</select>
+  	
+  	<!-- 查询所有颜色 -->
+    <select id="toGetAllColor" resultType="Color">
+		select * from info_color
+  	</select>
+  	
+  	<!-- 查询所有客户 -->
+    <select id="toGetAllStandard" resultType="Standard">
+		select * from info_standard
+  	</select>
+    
+    
+    <insert id="insertPlan">
+    	insert into bus_plan(plan_id, cus_id, co_id, standard_id, plan_xh, plan_month, plan_num, plan_type, plan_person, plan_status) 
+    	values (#{plan_id}, #{cus_id}, #{co_id}, #{standard_id}, #{plan_xh}, #{plan_month}, #{plan_num}, #{plan_type}, #{plan_person}, #{plan_status})
+    </insert>
+    
+    <update id="updatePlan">
+    	update bus_plan set 
+    	<if test="plan_status == 1">
+    		plan_status=#{plan_status},
+    	</if>
+    	<if test="plan_date != null">
+    		plan_date=#{plan_date}
+    	</if>
+    	<if test="cus_id != null and cus_id != ''">
+    		cus_id=#{cus_id},
+    	</if>
+    	<if test="co_id != null and co_id != ''">
+    		co_id=#{co_id},
+    	</if>
+    	<if test="standard_id != null and standard_id != ''">
+    		standard_id=#{standard_id},
+    	</if>
+    	<if test="plan_xh != null and plan_xh != ''">
+    		plan_xh=#{plan_xh},
+    	</if>
+    	<if test="plan_month != null and plan_month != ''">
+    		plan_month=#{plan_month},
+    	</if>
+    	<if test="plan_num != null and plan_num != ''">
+    		plan_num=#{plan_num},
+    	</if>
+    	<if test="plan_type != null and plan_type != ''">
+    		plan_type=#{plan_type}
+    	</if>
+		where plan_id=#{plan_id}
+    </update>
+    
+    <!-- 删除 -->
+     <delete id="deletePlan">
+    	delete from bus_plan where plan_id=#{plan_id}
+    </delete>
+    
+    <!-- 查询单个计划 -->
+    <select id="getPlan" resultType="PlanQuery">
+		select * from bus_plan where plan_id=#{plan_id}
+   </select>
+   
+   <select id="getIdandXh" resultType="Plan">
+   		select max(plan_id) plan_id, max(plan_xh) plan_xh from bus_plan
+   </select>
+
+</mapper>

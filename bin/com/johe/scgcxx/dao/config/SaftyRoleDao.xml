@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.safty.SaftyRoleDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Role">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*	
+ 			from (
+ 				select * from sys_role 
+ 				<where>
+ 					<if test="ro_id != null and ro_id != ''">
+ 						and ro_id = #{ro_id}
+ 					</if>
+ 					<if test="ro_name != null and ro_name != ''">
+ 						and ro_name like #{ro_name}
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start} order by ro_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(ro_id) 
+    	from sys_role 
+    	<where>
+    		<if test="ro_id != null and ro_id != ''">
+    			and ro_id = #{ro_id}
+    		</if>
+    		<if test="ro_name != null and ro_name != ''">
+    			and ro_name like #{ro_name}
+    		</if>
+    	</where>
+    </select>
+    
+    <insert id="insertRole">
+    	insert into sys_role(ro_id, ro_name, ro_remark) values (#{ro_id}, #{ro_name}, #{ro_remark})
+    </insert>
+    
+    <update id="alterRole">
+    	update sys_role set ro_name=#{ro_name}, ro_remark=#{ro_remark} where ro_id=#{ro_id}
+    </update>
+    
+    <!-- 删除 -->
+     <delete id="deleteRole">
+    	delete from sys_role where ro_id=#{ro_id}
+    </delete>
+    
+    <!-- 查询单个角色 -->
+        <select id="getRole" resultType="Role">
+			select * from sys_role
+			<where>
+			<if test="ro_id != null and ro_id != ''">
+				and ro_id = #{ro_id}
+			</if>
+			<if test="ro_name != null and ro_name != ''">
+				and ro_name like #{ro_name}
+			</if>
+ 			</where>
+    	</select>
+    <!-- 查询角色拥有的权限 -->
+    	<select id="getPerssionById" resultType="Rm">
+    		select * from sys_rm where ro_id=#{ro_id}
+    	</select>
+    <!-- 查询所有权限 -->
+    	<select id="getPermission" resultType="Permission">
+    		select 
+    			m.*,
+    			(select count(rm.m_id) from sys_rm rm where rm.m_id=m.m_id and rm.ro_id=#{ro_id}) has
+    		from sys_module m where m.m_pid is not null 
+    		and m.m_id != 1005 and m.m_id != 1010 and m.m_id != 1030 and m.m_id != 1025
+    	</select>
+    <!-- 分配权限 -->
+    	<insert id="AssignPermission">
+    		insert into sys_rm(m_id, ro_id) values (#{param1}, #{param2})
+    	</insert>
+    <!-- 取消权限 -->
+    	<delete id="UnAssignPermission">
+    		delete from sys_rm where m_id=#{param1} and ro_id=#{param2}
+    	</delete>
+</mapper>

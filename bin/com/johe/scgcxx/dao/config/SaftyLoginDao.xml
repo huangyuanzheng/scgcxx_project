@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.safty.SaftyLoginDao">
+	<!-- sql映射 -->
+    <select id="findCountByUidAndUpwd" resultType="User">
+        select * from sys_user 
+        <where>
+        		u_id = #{u_id} and u_pwd = #{u_pwd}
+        </where>
+    </select>
+    
+    <select id="getParentByUid" resultType="ParentModule">
+      select m_id, m_name 
+      from sys_module p 
+      where p.m_pid is null and 
+      exists (
+      select m.* 
+      from sys_module m inner join sys_rm rm on m.m_id = rm.m_id 
+      inner join sys_role r on rm.ro_id = r.ro_id 
+      inner join sys_ur ur on r.ro_id = ur.ro_id 
+      inner join sys_user us on ur.u_id = us.u_id 
+      where ur.u_id = #{param1} 
+      and m.m_ismenu = 1 and m.m_pid = p.m_id)
+      order by m_id
+    </select>
+    
+    <select id="getChildByUid" resultType="ChildModule">
+    	select m.m_id, m.m_name, m.m_url, p.m_id p_id, p.m_name p_name 
+    	from sys_module p 
+    	inner join sys_module m on p.m_id = m.m_pid 
+    	inner join sys_rm rm on m.m_id=rm.m_id 
+    	inner join sys_role r on rm.ro_id = r.ro_id 
+    	inner join sys_ur ur on r.ro_id = ur.ro_id
+    	inner join sys_user us on ur.u_id = us.u_id
+    	where us.u_id = #{param1} and m.m_ismenu = 1  
+    	order by m.m_id
+    </select>
+    
+    <update id="alterPwd">
+    	update sys_user set u_pwd=#{param2} where u_id=#{param1}
+    </update>
+</mapper>

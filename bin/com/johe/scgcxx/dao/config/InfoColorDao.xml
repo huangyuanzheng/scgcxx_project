@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.info.InfoColorDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Color">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*	
+ 			from (
+ 				select * from info_color 
+ 				<where>
+ 					<if test="co_id != null and co_id != ''">
+ 						and co_id = #{co_id}
+ 					</if>
+ 					<if test="co_name != null and co_name != ''">
+ 						and co_name like #{co_name}
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start} order by co_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(co_id) 
+    	from info_color 
+    	<where>
+    		<if test="co_id != null and co_id != ''">
+    			and co_id = #{co_id}
+    		</if>
+    		<if test="co_name != null and co_name != ''">
+    			and co_name like #{co_name}
+    		</if>
+    	</where>
+    </select>
+    
+    <insert id="insertColor">
+    	insert into info_color(co_id, co_name, co_remark) values (#{co_id}, #{co_name}, #{co_remark})
+    </insert>
+    
+    <update id="alterColor">
+    	update info_color set co_name=#{co_name}, co_remark=#{co_remark} where co_id=#{co_id}
+    </update>
+    
+    <!-- 删除 -->
+     <delete id="deleteColor">
+    	delete from info_color where co_id=#{co_id}
+    </delete>
+    
+    <!-- 查询颜色 -->
+        <select id="getColor" resultType="Color">
+			select * from info_color
+			<where>
+			<if test="co_id != null and co_id != ''">
+				and co_id = #{co_id}
+			</if>
+			<if test="co_name != null and co_name != ''">
+				and co_name like #{co_name}
+			</if>
+ 			</where>
+    	</select>
+	<!-- 查询最大的颜色id号 -->
+		<select id="GetId" resultType="Color">
+			select max(co_id) co_id from info_color
+		</select>
+</mapper>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessStoreDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Store">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from 
+ 				(
+ 				select st.*, 
+ 					(case st.store_status when '50' then '已包装' when '60' then '已入库' else '已入库' end) store_status_name
+ 				from bus_store st 
+ 				<where>
+ 					(st.store_status = '50' or st.store_status = '60' or st.store_status = '70') 
+ 					<if test="store_id != null">
+ 						and st.store_id = #{store_id}
+ 					</if>
+ 					<if test="store_status == 0">
+ 						and (st.store_status = '50')
+ 					</if>
+ 					<if test="store_status == 1">
+ 						and st.store_status &gt;= '60'
+ 					</if>
+ 					<if test="store_status == 2">
+ 						and st.store_status &gt;= '50'
+ 					</if>
+ 					order by store_id 
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start}
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+        select count(st.store_id) 
+    	from bus_store st 
+    	<where>
+			(st.store_status = '50' or st.store_status = '60' or st.store_status = '70') 
+			<if test="store_id != null">
+				and st.store_id = #{store_id}
+			</if>
+			<if test="store_status == 0">
+				and (st.store_status = '50')
+			</if>
+			<if test="store_status == 1">
+				and st.store_status &gt;= '60'
+			</if>
+			<if test="store_status == 2">
+				and st.store_status &gt;= '50'
+			</if>
+    	</where>
+    </select>
+    
+</mapper>

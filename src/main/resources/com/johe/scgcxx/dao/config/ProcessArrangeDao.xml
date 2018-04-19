@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessArrangeDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Process">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from 
+ 				(
+ 					select pr.process_id, pr.plan_id, pr.process_cus, pr.process_std, pr.process_color, pr.print_num, pr.arrange_num, pr.arrange_date, 
+ 						pr.arrange_person, pr.pretreat_num, pr.dye_num, 
+ 						decode(bs.plan_type,1,'白布产品',2,'色布产品',3,'无底色印花产品',4,'有底色印花产品') plan_type_name, 
+ 						(case pr.process_status when '10' then '已前处理' when '15' then '已染色' when '20' then '已印花' when '25' then '已整理' else '已整理' end) process_status_name
+ 					from 
+ 						bus_process pr inner join bus_plan bs on pr.plan_id=bs.plan_id 
+ 				<where>
+ 					(((pr.process_status='10' or pr.process_status='25' or pr.process_status='30' or 
+ 					 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+ 						and bs.plan_type=1)
+ 					or	
+ 						((pr.process_status='15' or pr.process_status='25' or pr.process_status='30' or 
+ 					 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+ 						and bs.plan_type=2)
+ 					or
+ 						(((pr.process_status='20' or pr.process_status='25' or pr.process_status='30' or 
+ 					 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+ 						and (bs.plan_type=3 or bs.plan_type=4))))
+ 					<if test="process_id != null">
+ 						and pr.process_id = #{process_id}
+ 					</if>
+ 					<if test="process_status == 0">
+ 						and (pr.process_status = '10' or pr.process_status = '15' or pr.process_status = '20')
+ 					</if>
+ 					<if test="process_status == 1">
+ 						and pr.process_status &gt;= '25'
+ 					</if>
+ 					<if test="process_status == 2">
+ 						and process_status &gt;= '10'
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start}
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(pr.process_id) 
+    	from bus_process pr inner join bus_plan bs on pr.plan_id=bs.plan_id
+    	<where>
+			(((pr.process_status='10' or pr.process_status='25' or pr.process_status='30' or 
+			 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+				and bs.plan_type=1)
+			or	
+				((pr.process_status='15' or pr.process_status='25' or pr.process_status='30' or 
+			 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+				and bs.plan_type=2)
+			or
+				(((pr.process_status='20' or pr.process_status='25' or pr.process_status='30' or 
+			 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50') 
+				and (bs.plan_type=3 or bs.plan_type=4))))
+			<if test="process_id != null">
+				and pr.process_id = #{process_id}
+			</if>
+			<if test="process_status == 0">
+				and (pr.process_status = '10' or pr.process_status = '15' or pr.process_status = '20')
+			</if>
+			<if test="process_status == 1">
+				and pr.process_status &gt;= '25'
+			</if>
+			<if test="process_status == 2">
+				and process_status &gt;= '10'
+			</if>
+    	</where>
+    </select>
+    
+    <!-- 查询投坯分组  -->
+    <select id="getArrange" resultType="Process">
+    	select pr.*, bs.plan_type
+    		from 
+    			bus_process pr 
+    			inner join bus_plan bs on pr.plan_id = bs.plan_id 
+    		where process_id = #{process_id}
+    </select>
+    
+    <!-- 完成前处理 -->	
+    <update id="doArrange">
+    	update bus_process set 
+    		arrange_num=#{arrange_num}, arrange_date=#{arrange_date}, arrange_person=#{arrange_person}, process_status=#{process_status} 
+    	where process_id = #{process_id}
+    </update>
+</mapper>

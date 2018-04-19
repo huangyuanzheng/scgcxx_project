@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessPackageDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Product">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from 
+ 				(
+ 				select pt.*, t1.pkg_num product_pkg, 
+ 				 	(case pt.product_level when '01' then '一等品' when '02' then '二等品' when '03' then '三等品' when '04' then '等外品' end)product_level_name,
+					(case pt.product_status when '35' then '已质检' when '40'	then '包装中' when '50' then '已包装' else '已包装' end)product_status_name
+				from bus_product pt left join 
+					(
+						select t0.product_id, sum(t0.store_num)pkg_num
+							from 
+								(
+									select product_id, store_num from bus_store
+								)t0 
+						group by t0.product_id
+					)t1 on pt.product_id = t1.product_id
+ 				<where>
+ 					(pt.product_status = '35' or pt.product_status = '40' or pt.product_status = '50' or pt.product_status = '55' or pt.product_status = '60' or pt.product_status = '65' 
+ 					 or pt.product_status = '70') 
+ 					<if test="product_id != null">
+ 						and pt.product_id = #{product_id}
+ 					</if>
+ 					<if test="product_status == 0">
+ 						and (pt.product_status = '35' or pt.product_status = '40')
+ 					</if>
+ 					<if test="product_status == 1">
+ 						and pt.product_status &gt;= '50'
+ 					</if>
+ 					<if test="product_status == 2">
+ 						and product_status &gt;= '35'
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start}
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+        select count(pt.product_id) 
+    	from bus_product pt
+    	<where>
+			(pt.product_status = '35' or pt.product_status = '40' or pt.product_status = '50' or pt.product_status = '55' or pt.product_status = '60' or pt.product_status = '65' 
+			 or pt.product_status = '70') 
+			<if test="product_id != null">
+				and pt.product_id = #{product_id}
+			</if>
+			<if test="product_status == 0">
+				and (pt.product_status = '35' or pt.product_status = '40')
+			</if>
+			<if test="product_status == 1">
+				and pt.product_status &gt;= '50'
+			</if>
+			<if test="product_status == 2">
+				and product_status &gt;= '35'
+			</if>
+    	</where>
+    </select>
+    
+    <!-- 查询投坯分组  -->
+    <select id="getPackage" resultType="Product">
+    	select pt.*, t0.store_num from 
+    			bus_product pt left join
+    			(
+    				select product_id, sum(store_num) store_num 
+    				from 
+    					bus_store group by product_id
+    			)t0
+    		on pt.product_id = t0.product_id 
+    	where pt.product_id = #{product_id}
+    </select>
+    
+    <insert id="createPackage">
+    	insert into bus_store (store_id, product_id, store_cus, store_std, store_color, store_num, store_status)
+    		values
+        (nvl((select max(store_id) from bus_store), 0)+1, #{product_id}, #{product_cus}, #{product_std}, 
+         #{process_color}, #{product_pkg}, '50')
+    </insert>
+    
+    <update id="finishProduct">
+    	update bus_product set product_status = '50' where product_id = #{product_id}
+    </update>
+    
+    <update id="packagedProcess">
+    	update bus_process set process_status = '50' where process_id = #{process_id}
+    </update>
+    
+    <update id="packageProcess">
+    	update bus_process set process_status = '40' where process_id = #{process_id}
+    </update>
+    
+    <update id="updateProduct">
+    	update bus_product set product_status = '40' where product_id = #{product_id}
+    </update>
+    
+    <select id="checkProcess" resultType="int">
+    	select count(product_id) from bus_product where process_id = #{process_id} and (product_status = '35' or product_status = '40')
+    </select>
+</mapper>

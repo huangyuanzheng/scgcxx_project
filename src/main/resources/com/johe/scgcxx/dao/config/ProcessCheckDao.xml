@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessCheckDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Check">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from 
+ 				(
+ 					select pr.process_id, pr.plan_id, pr.process_std, pr.arrange_num, pr.process_status, pr.process_cus, process_color,
+ 						t3.product_first, t3.product_second, t3.product_third, t3.product_subStandard, t3.product_sum,
+ 						(case pr.process_status when '25' then '已整理' when '30' then '质检中' when '35' then '已质检' else '已质检' end) process_status_name
+ 					from 
+ 						bus_process pr left join 
+ 							(
+ 								select 
+ 									t2.*, (nvl(product_first, 0)+nvl(product_second, 0)+nvl(product_third, 0)+nvl(product_subStandard, 0))product_sum 
+ 								from 
+ 									(
+ 										select t1.process_id, 
+	 										sum(case when t1.product_level = '01' then t1.product_num end) as product_first,
+	 										sum(case when t1.product_level = '02' then t1.product_num end) as product_second,
+	 										sum(case when t1.product_level = '03' then t1.product_num end) as product_third,
+	 										sum(case when t1.product_level = '04' then t1.product_num end) as product_subStandard 
+ 								 		from 
+	 								 		(
+	 								 			select pt.process_id,pt.product_num,pt.product_level 
+	 								 			from bus_product pt 
+	 								 		)t1
+ 										group by t1.process_id
+ 									)t2
+ 							)t3
+ 				on pr.process_id=t3.process_id 
+ 				<where>
+ 					(pr.process_status='25' or pr.process_status='30' or pr.process_status='35' or pr.process_status='40' or pr.process_status='50' or 
+ 					 pr.process_status='55' or pr.process_status='60' or pr.process_status='65' or pr.process_status='70') 
+ 					<if test="process_id != null">
+ 						and pr.process_id = #{process_id}
+ 					</if>
+ 					<if test="process_status == 0 or process_status == null">
+ 						and (pr.process_status = '25' or pr.process_status = '30')
+ 					</if>
+ 					<if test="process_status == 1">
+ 						and pr.process_status &gt;= '30'
+ 					</if>
+ 					<if test="process_status == 2">
+ 						and process_status &gt;= '25'
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start}
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+        select count(pr.process_id) 
+    	from bus_process pr inner join bus_plan bs on pr.plan_id=bs.plan_id
+    	<where>
+			(pr.process_status='25' or pr.process_status='30' or 
+			 	pr.process_status='35' or pr.process_status='40' or pr.process_status='50')
+			<if test="process_id != null">
+				and pr.process_id = #{process_id}
+			</if>
+			<if test="process_status == 0">
+				and (pr.process_status = '25' or pr.process_status = '30')
+			</if>
+			<if test="process_status == null">
+				and (pr.process_status = '25' or pr.process_status = '30')
+			</if>
+			<if test="process_status == 1">
+				and pr.process_status &gt;= '35'
+			</if>
+			<if test="process_status == 2">
+				and process_status &gt;= '25'
+			</if>
+    	</where>
+    </select>
+    
+    <!-- 查询投坯分组  -->
+    <select id="getCheck" resultType="Process">
+    	select * from 
+    			bus_process  
+    		where process_id = #{process_id}
+    </select>
+    
+    <!-- 完成前处理 -->	
+    <update id="doArrange">
+    	update bus_process set 
+    		arrange_num=#{arrange_num}, arrange_date=#{arrange_date}, arrange_person=#{arrange_person}, process_status=#{process_status} 
+    	where process_id = #{process_id}
+    </update>
+    
+    <insert id="createFirst">
+    	insert into bus_product (product_id, process_id, product_cus, product_std, process_color, product_level, product_num, product_status)
+    		values
+        (nvl((select max(product_id) from bus_product), 0)+1, #{process_id}, #{product_cus}, #{product_std}, #{process_color},'01', #{product_first}, '30')
+    </insert>
+</mapper>

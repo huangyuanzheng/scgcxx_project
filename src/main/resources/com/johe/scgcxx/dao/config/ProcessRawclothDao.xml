@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessRawclothDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Process">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from (
+ 				select  pr.*, 
+ 				case process_status 
+ 					when '00' then '未投坯'
+ 					when '05' then '已投坯'
+ 					else '已投坯'
+ 				end process_status_name
+ 				from bus_process pr 
+ 				<where>
+ 					<if test="plan_id != null">
+ 						and plan_id like ${plan_id}
+ 					</if>
+ 					<if test="process_id != null">
+ 						and process_id = #{process_id}
+ 					</if>
+ 					<if test="process_status == 0">
+ 						and process_status = '00'
+ 					</if>
+ 					<if test="process_status == 1">
+ 						and process_status = '05'
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start} order by plan_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(process_id) 
+    	from bus_process 
+    	<where>
+			<if test="plan_id != null">
+				and plan_id like ${plan_id}
+			</if>
+			<if test="process_id != null">
+				and process_id = #{process_id}
+			</if>
+			<if test="process_status == 0">
+				and process_status = '00'
+			</if>
+			<if test="process_status == 1">
+				and process_status = '05'
+			</if>
+    	</where>
+    </select>
+
+    <!-- 计划分组 -->
+    <insert id="GroupPlan">
+    	insert into bus_process (process_id, plan_id, process_cus, process_color, process_std, group_num, process_status) 
+    		values
+    			(#{process_id}, #{plan_id}, #{process_cus}, #{process_color}, #{process_std}, #{group_num}, #{process_status})
+    </insert>
+    
+    <!-- 确认分组 -->
+   	<update id="AssignProcess">
+   		update bus_process set group_date=#{group_date}, group_person=#{group_person}, process_status=#{process_status} 
+   			where process_id=#{process_id}
+   	</update>
+   	
+   	<!-- 获取分组计划信息 -->
+   	<select id="GetProcess" resultType="Process">
+	   	select pro.*, pla.plan_num, (pla.plan_num-gg.plan_num1+pro.group_num)plan_nums 
+	  		from(
+	         select s.plan_id, nvl(sum(s.group_num), 0)plan_num1 
+	         from (
+	              select pla.plan_id, pr.group_num from bus_plan pla 
+	                     left outer join bus_process pr on pla.plan_id = pr.plan_id 
+	                     right join 
+	                     (select plan_id from bus_process where bus_process.process_id=#{process_id})aa on aa.plan_id=pla.plan_id
+	             )s group by s.plan_id
+	       )gg 
+	       inner join bus_plan pla    on pla.plan_id = gg.plan_id
+	       inner join bus_process pro on pro.plan_id = gg.plan_id 
+	  	where pro.process_id = #{process_id} 
+   	</select>
+   	
+   	<!-- 修改分组计划信息 -->
+   	<update id="AlterProcess">
+   		update bus_process set group_num = #{group_num} where process_id = #{process_id}
+   	</update>
+   	
+   	<!-- 删除分组计划信息 -->
+   	<delete id="DeleteProcess">
+   		delete from bus_process where process_id=#{process_id}
+   	</delete>
+   	
+</mapper>

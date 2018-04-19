@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.johe.scgcxx.dao.query.QueryCompanyDao">
+<select id="getAllCompany"  resultType="com.johe.scgcxx.model.Company">
+    select t4.*, sd.standard_name  from
+ (select sum(product_yd)yd_product,sum(product_ed)ed_product,sum(product_sd)sd_product,
+         sum(product_dw)dw_product,plan_id,sum(group_num)num_group,sum(check_num) num_check,check_date
+ from
+  (select t1.process_id,sum(case when t1.product_level='01' then t1.product_num end) as product_yd, 
+                                 sum(case when t1.product_level='02' then t1.product_num end) as product_ed, 
+                                   sum(case when t1.product_level='03' then t1.product_num end) as product_sd,  
+                                     sum(case when t1.product_level='04' then t1.product_num end) as product_dw
+from
+ (select pt.process_id,pt.product_num,pt.product_level
+from bus_product pt where pt.product_status!='30')t1 group by t1.process_id)t2 
+inner join 
+(select process_id,plan_id,group_num,check_num,check_date from bus_process where process_status='35' 
+or process_status='40' or process_status='50')t3 on t2.process_id=t3.process_id group by plan_id,check_date)t4
+left outer join bus_plan bp on t4.plan_id=bp.plan_id inner join info_standard sd 
+on bp.standard_id=sd.standard_id where 1=1
+
+<if test="_parameter==null">
+	AND check_date=to_char(sysdate,'yyyy-mm-dd')
+</if>
+<if test="_parameter!='' and _parameter!=null">
+	AND check_date=#{jkl}
+</if>
+</select>
+
+</mapper>  

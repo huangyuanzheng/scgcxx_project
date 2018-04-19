@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessPretreatmentDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Process">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from (
+ 				select  pr.*, 
+ 				case process_status 
+ 					when '10' then '已前处理'
+ 					when '05' then '待前处理'
+ 				end process_status_name
+ 				from bus_process pr 
+ 				<where>
+ 					<if test="process_id != null">
+ 						and process_id = #{process_id}
+ 					</if>
+ 					<if test="process_status == 0">
+ 						and process_status = '05'
+ 					</if>
+ 					<if test="process_status == 1">
+ 						and process_status = '10'
+ 					</if>
+ 					<if test="process_status == 2">
+ 						and process_status &gt; '00'
+ 					</if>
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start} order by plan_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(process_id) 
+    	from bus_process 
+    	<where>
+			<if test="process_id != null">
+				and pl.process_id = #{process_id}
+			</if>
+			<if test="process_status == 0">
+				and process_status = '00'
+			</if>
+			<if test="process_status == 1">
+				and process_status = '05'
+			</if>
+			<if test="process_status == 2">
+ 				and process_status &gt; '00'
+ 			</if>
+    	</where>
+    </select>
+    
+    <!-- 查询投坯分组  -->
+    <select id="getPretreatment" resultType="Process">
+    	select * from bus_process where process_id = #{process_id}
+    </select>
+    
+    <!-- 完成前处理 -->	
+    <update id="finishPretreatment">
+    	update bus_process set 
+    		pretreat_num=#{pretreat_num}, pretreat_date=#{pretreat_date}, pretreat_person=#{pretreat_person}, process_status=#{process_status} 
+    	where process_id = #{process_id}
+    </update>
+</mapper>

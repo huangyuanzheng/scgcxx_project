@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessGetStoreDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Store">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from (
+ 				select st.*, 
+ 				(case st.store_status when '50' then '已包装' when '60' then '已入库' else '已提货' end) store_status_name
+ 				from bus_store st
+ 				<where>
+ 					st.product_id = #{product_id} order by st.store_id 
+ 				</where>)R 
+ 				where rownum &lt;= ${end}
+ 		)RR	 
+ 		where row_ &gt; ${start}
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(st.store_id) 
+    	from bus_store st
+    	<where>
+			st.product_id = #{product_id}
+    	</where>
+    </select>
+</mapper>

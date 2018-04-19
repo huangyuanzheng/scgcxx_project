@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.johe.scgcxx.dao.process.ProcessGetPlansDao">
+	<!-- 分页查询单页数据 -->
+    <select id="findData" resultType="Plan">
+ 		select * 
+ 		from (
+ 			select rownum row_, R.*  
+ 			from (
+ 				select pl.*, co.co_name co_name, st.standard_name standard_name, cu.cus_name cus_name, (pl.plan_num - aa.plan_num1)plan_nums,
+					case pl.plan_type 
+							when 1 then '白布产品' 
+							when 2 then '染色产品'
+							when 3 then '无底色印花产品'
+							when 4 then '有底色印花产品'
+					end plan_type_name
+					from (
+						select s.plan_id, nvl(sum(s.group_num), 0)plan_num1 
+						from (
+							select pla.plan_id, pla.plan_num, pr.group_num 
+								from bus_plan pla left outer join bus_process pr on pla.plan_id = pr.plan_id 
+								where pla.plan_status = 1
+						)s group by s.plan_id
+					)aa inner join bus_plan   	 pl on aa.plan_id     = pl.plan_id 
+						inner join info_color 	 co on pl.co_id       = co.co_id 
+						inner join info_standard st on pl.standard_id = st.standard_id
+						inner join info_customer cu on pl.cus_id 	  = cu.cus_id 
+				<where>
+    				<if test="plan_id != null">
+						and pl.plan_id like ${plan_id}
+					</if>
+					<if test="plan_month != null and plan_month != ''">
+						and pl.plan_month = #{plan_month}
+					</if>
+					<if test="plan_type != null">
+						and pl.plan_type = #{plan_type}
+					</if>
+						and pl.plan_status = #{plan_status}
+    			</where>
+				)R 
+ 				where rownum &lt;= ${end}
+ 			)RR	 
+ 		where row_ &gt; ${start} order by plan_id
+    </select>
+    
+    <!--查询总数据  -->
+    <select id="findTotal" resultType="int">
+    	select count(plan_id) 
+    	from bus_plan pl
+    	<where>
+    		<if test="plan_id != null">
+				and pl.plan_id like ${plan_id}
+			</if>
+			<if test="plan_month != null and plan_month != ''">
+				and pl.plan_month = #{plan_month}
+			</if>
+			<if test="plan_type != null">
+				and pl.plan_type = #{plan_type}
+			</if>
+			and pl.plan_status = #{plan_status}
+    	</where>
+    </select>
+    
+    <!-- 查询单个计划 -->
+    <select id="getPlan" resultType="Plan">
+      select pl.*, cu.cus_name cus_name, co.co_name co_name, st.standard_name standard_name, (pl.plan_num - aa.plan_num1)plan_nums,
+          case pl.plan_type 
+                when 1 then '白布产品'
+                when 2 then '染色产品'
+                when 3 then '无底色印花产品'
+                when 4 then '有底色印花产品'
+            end plan_type_name
+        from (
+          select s.plan_id, nvl(sum(s.group_num), 0)plan_num1 
+          from (
+            select pa.*, pr.group_num from bus_plan pa 
+              left join bus_process pr on pa.plan_id = pr.plan_id 
+              where pa.plan_id = #{plan_id})s group by s.plan_id
+          )aa inner join bus_plan pl on aa.plan_id = pl.plan_id 
+            inner join info_customer cu on pl.cus_id      = cu.cus_id 
+            inner join info_color co  on pl.co_id         
+            = co.co_id 
+            inner join info_standard st on pl.standard_id = st.standard_id
+    </select>
+    
+    <select id="getProcessGroupId" resultType="Process">
+    	select max(process_id) process_id from bus_process
+    </select>
+</mapper>
